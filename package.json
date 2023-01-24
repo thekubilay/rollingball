@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host --port=3000",
     "build": "vue-tsc && vite build",
+    "buildtest": "vue-tsc --noEmit && vite build --base=/rollingball/",
     "preview": "vite preview"
   },
   "dependencies": {

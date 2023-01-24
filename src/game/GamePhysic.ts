@@ -8,43 +8,102 @@ export class GamePhysic {
   ball_body: CANNON.Body | null = null
   ball_material = new CANNON.Material()
   wall_material = new CANNON.Material()
+  point_material = new CANNON.Material()
   debugger: any = null
-  contacted = false
   threshold: number = 10;
   x: number = 0;
-  y: number = 0;
+  z: number = 0;
+  point: string | null = null
+  point1 = false
+  point2 = false
+  point3 = false
+  point4 = false
+  point5 = false
+  goal = false
 
   constructor(game: GameScene) {
     this.game = game;
     this.world.gravity.set(0, 0, 0);
 
-    this.world.addEventListener('postStep', () => {
-      this.contacted = false;
-      this.world.contacts.forEach(contact => {
-        this.contacted = contact.bi === this.ball_body;
-      });
-    });
+    // this.world.addEventListener('postStep', () => {
+    //   this.contacted = false;
+    //   this.world.contacts.forEach(contact => {
+    //     this.contacted = contact.bi === this.ball_body;
+    //   });
+    // });
 
     this.world.addEventListener("beginContact", (e: any) => {
-      if (e.bi === this.ball_body && e.bj.collisionFilterGroup === 1) {
-        if (e.contact.getImpactVelocityAlongNormal() > this.threshold) {
-          // change the impulse direction so that it does not jump back
-          e.contact.ni.negate(e.contact.ni);
-          this.ball_body!.applyImpulse(e.contact.ni, e.contact.ri);
+      // console.log(e.bodyB?.collisionFilterGroup)
+      if (e.bodyA === this.ball_body && e.bodyB.collisionFilterGroup === 1) {
+        // const impactVelocity = e.contactEquations[0].getImpactVelocity();
+        // if(impactVelocity > this.threshold){
+        //   let impulse = e.contactEquations[0].ni;
+        //   impulse.negate(impulse);
+        //   this.ball_body!.applyImpulse(impulse, e.contactEquations[0].ri);
+        // }
+      } else if (e.bodyA === this.ball_body && e.bodyB.collisionFilterGroup === 2) {
+        if (!this.point1) {
+          this.point = "Project1"
+          this.point1 = true
+          setTimeout(() => {
+            this.point = null
+          }, 30)
+        }
+      } else if (e.bodyA === this.ball_body && e.bodyB.collisionFilterGroup === 3) {
+        if (!this.point2) {
+          this.point = "Project2"
+          this.point2 = true
+          setTimeout(() => {
+            this.point = null
+          }, 30)
+        }
+      } else if (e.bodyA === this.ball_body && e.bodyB.collisionFilterGroup === 4) {
+        if (!this.point3) {
+          this.point = "Project3"
+          this.point3 = true
+          setTimeout(() => {
+            this.point = null
+          }, 30)
+        }
+      } else if (e.bodyA === this.ball_body && e.bodyB.collisionFilterGroup === 5) {
+        if (!this.point4) {
+          this.point = "Project4"
+          this.point4 = true
+          setTimeout(() => {
+            this.point = null
+          }, 30)
+        }
+      } else if (e.bodyA === this.ball_body && e.bodyB.collisionFilterGroup === 6) {
+        if (!this.point5) {
+          this.point = "Project5"
+          this.point5 = true
+          setTimeout(() => {
+            this.point = null
+          }, 30)
+        }
+      } else if (e.bodyA === this.ball_body && e.bodyB.collisionFilterGroup === 7) {
+        if (!this.goal) {
+          this.point = "Goal"
+          this.goal = true
         }
       }
     });
+
 
     this.ball_material.restitution = 0.01;
     this.wall_material.restitution = 0.01;
     this.ball_material.friction = 0.5;
     this.wall_material.friction = 0.5;
 
-    const ballWallMaterial = new CANNON.ContactMaterial(this.ball_material, this.wall_material, {restitution: 0.3});
+    const ballWallMaterial = new CANNON.ContactMaterial(this.ball_material, this.wall_material, {restitution: .3});
+    const ballPointMaterial = new CANNON.ContactMaterial(this.ball_material, this.point_material, {restitution: .3});
+
     this.world.addContactMaterial(ballWallMaterial);
+    this.world.addContactMaterial(ballPointMaterial);
 
     this.create_ball_body()
     this.create_walls()
+    this.create_checkpoints()
 
     window.addEventListener("deviceorientation", this.setDeviceOrient.bind(this));
 
@@ -55,7 +114,22 @@ export class GamePhysic {
 
   setDeviceOrient(event: DeviceOrientationEvent): void {
     this.x = event.gamma || 0;
-    this.y = event.beta || 0;
+    this.z = event.beta || 0;
+  }
+
+  create_checkpoints(): void {
+    const checkpoints = [
+      {position: new CANNON.Vec3(-10, 2, -12.5), size: new CANNON.Vec3(1.3, 1.3, 1.3), collisionFilterGroup: 2},
+      {position: new CANNON.Vec3(-7, 2, -22.5), size: new CANNON.Vec3(1.3, 1.3, 1.3), collisionFilterGroup: 3},
+      {position: new CANNON.Vec3(-8, 2, 17.5), size: new CANNON.Vec3(1.3, 1.3, 1.3), collisionFilterGroup: 4},
+      {position: new CANNON.Vec3(12.5, 2, 22.5), size: new CANNON.Vec3(1.3, 1.3, 1.3), collisionFilterGroup: 5},
+      {position: new CANNON.Vec3(7.5, 2, -7.5), size: new CANNON.Vec3(1.3, 1.3, 1.3), collisionFilterGroup: 6},
+      {position: new CANNON.Vec3(2.5, 2, -10.5), size: new CANNON.Vec3(1.3, 1.3, 1.3), collisionFilterGroup: 7},
+    ]
+
+    checkpoints.forEach(cp => {
+      this.createBox(cp.position, cp.size, cp.collisionFilterGroup);
+    })
   }
 
   create_walls(): void {
@@ -139,16 +213,29 @@ export class GamePhysic {
     this.world.addBody(body);
   }
 
+  createBox(position: CANNON.Vec3, size: CANNON.Vec3, collisionFilterGroup: number) {
+    const shape = new CANNON.Box(size);
+    const body = new CANNON.Body({
+      mass: 1,
+      shape: shape,
+      material: this.point_material,
+      collisionResponse: false
+    });
+
+    body.position.set(position.x, position.y, position.z);
+    body.collisionFilterGroup = collisionFilterGroup;
+    this.world.addBody(body);
+  }
+
   create_ball_body() {
-    const radius = 0.5;
     const shape = new CANNON.Sphere(1);
     this.ball_body = new CANNON.Body({
       mass: 1,
       shape: shape,
       material: this.ball_material,
       position: new CANNON.Vec3(-2.5, 1, -12.5),
-      linearDamping: 0.05, // add some damping to slow down the ball over time
-      angularDamping: 0.05 // add some damping to slow down the ball's rotation over time
+      linearDamping: .5, // add some damping to slow down the ball over time
+      angularDamping: .5 // add some damping to slow down the ball's rotation over time
     });
     this.world.addBody(this.ball_body);
   }
@@ -156,12 +243,13 @@ export class GamePhysic {
   update() {
     this.world.step(1 / 60);
 
-    // // apply a force to the ball based on the device orientation
-    this.ball_body!.applyForce(new CANNON.Vec3(this.x, 0, this.y), this.ball_body!.position);
+    // this.ball_body!.position.y = 0
+    this.ball_body!.applyForce(new CANNON.Vec3(this.x, 0, this.z), this.ball_body!.position);
+    this.ball_body!.angularVelocity.set(this.x * 0.01, 0, this.z * 0.01);
 
     this.game.ball.position.copy(this.ball_body?.position as any);
     this.game.ball.quaternion.copy(this.ball_body?.quaternion as any);
 
-    this.debugger.update();
+    // this.debugger.update();
   }
 }
